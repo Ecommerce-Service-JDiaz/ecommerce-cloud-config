@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-config
+  namespace: ${NAMESPACE}
+  labels:
+    app: cloud-config
+    environment: ${ENVIRONMENT}
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cloud-config
+  template:
+    metadata:
+      labels:
+        app: cloud-config
+        environment: ${ENVIRONMENT}
+    spec:
+      containers:
+      - name: cloud-config
+        image: ${ACR_NAME}.azurecr.io/${IMAGE_NAME}:${IMAGE_TAG}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9296
+          name: http
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: cloud-config-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: SPRING_ZIPKIN_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: cloud-config-config
+              key: SPRING_ZIPKIN_BASE_URL
+        - name: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
+          valueFrom:
+            configMapKeyRef:
+              name: cloud-config-config
+              key: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
+        - name: SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: cloud-config-secrets
+              key: SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME
+        - name: SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cloud-config-secrets
+              key: SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 9296
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 9296
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      imagePullSecrets:
+      - name: acr-secret
+
+

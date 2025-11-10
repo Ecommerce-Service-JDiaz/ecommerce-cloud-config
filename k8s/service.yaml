@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-config-service
+  namespace: ${NAMESPACE}
+  labels:
+    app: cloud-config
+    environment: ${ENVIRONMENT}
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 9296
+    protocol: TCP
+    name: http
+  selector:
+    app: cloud-config
+    environment: ${ENVIRONMENT}
+
