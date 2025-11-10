@@ -59,7 +59,9 @@ jobs:
           --name ${{ env.CLUSTER_NAME }}
 
     - name: Create namespace if not exists
-      run: kubectl create namespace ${{ env.ENVIRONMENT }} --dry-run=client -o yaml | kubectl apply -f -
+      run: |
+        kubectl create namespace ${{ env.ENVIRONMENT }} --dry-run=client -o yaml | kubectl apply -f -
+        echo "Using namespace: ${{ env.ENVIRONMENT }}"
 
     - name: Create Docker Hub pull secret
       run: |
@@ -93,15 +95,15 @@ jobs:
 
     - name: Deploy to Kubernetes
       run: |
+        echo "Deploying to namespace: ${{ env.ENVIRONMENT }}"
+        export NAMESPACE="${{ env.ENVIRONMENT }}"
+        export ENVIRONMENT="${{ env.ENVIRONMENT }}"
+        export IMAGE_TAG="${{ github.sha }}"
+        export IMAGE_NAME="${{ env.IMAGE_NAME }}"
+        export DOCKER_USERNAME="${{ env.DOCKER_USERNAME }}"
         envsubst < k8s/deployment.yaml | kubectl apply -f -
         envsubst < k8s/service.yaml | kubectl apply -f -
         kubectl rollout status deployment/cloud-config -n ${{ env.ENVIRONMENT }}
-      env:
-        IMAGE_TAG: ${{ github.sha }}
-        IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        DOCKER_USERNAME: ${{ env.DOCKER_USERNAME }}
-        NAMESPACE: ${{ env.ENVIRONMENT }}
-        ENVIRONMENT: ${{ env.ENVIRONMENT }}
 
     - name: Verify deployment
       run: |
