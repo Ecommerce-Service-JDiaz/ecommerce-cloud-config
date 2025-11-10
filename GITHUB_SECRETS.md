@@ -20,6 +20,9 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 - `DOCKERHUB_TOKEN` - Token de acceso de Docker Hub (Access Token, no la contraseña)
   > **Nota:** Puedes generar un Access Token en Docker Hub: Account Settings → Security → New Access Token
 
+### Configuración de la Aplicación
+- `SPRING_CLOUD_CONFIG_SERVER_GIT_URI` - URI del repositorio Git del config server (compartido para todos los ambientes)
+
 ## Secrets para Ambiente DEV (develop branch)
 
 ### Azure y AKS
@@ -28,7 +31,6 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 
 ### Configuración de la Aplicación
 - `DEV_SPRING_ZIPKIN_BASE_URL` - URL base de Zipkin para tracing
-- `DEV_SPRING_CLOUD_CONFIG_SERVER_GIT_URI` - URI del repositorio Git del config server
 - `DEV_GIT_USERNAME` - Usuario para acceder al repositorio Git del config server
 - `DEV_GIT_PASSWORD` - Contraseña/token para acceder al repositorio Git del config server
 
@@ -42,7 +44,6 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 
 ### Configuración de la Aplicación
 - `STAGE_SPRING_ZIPKIN_BASE_URL` - URL base de Zipkin para tracing
-- `STAGE_SPRING_CLOUD_CONFIG_SERVER_GIT_URI` - URI del repositorio Git del config server
 - `STAGE_GIT_USERNAME` - Usuario para acceder al repositorio Git del config server
 - `STAGE_GIT_PASSWORD` - Contraseña/token para acceder al repositorio Git del config server
 
@@ -56,7 +57,6 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 
 ### Configuración de la Aplicación
 - `PROD_SPRING_ZIPKIN_BASE_URL` - URL base de Zipkin para tracing
-- `PROD_SPRING_CLOUD_CONFIG_SERVER_GIT_URI` - URI del repositorio Git del config server
 - `PROD_GIT_USERNAME` - Usuario para acceder al repositorio Git del config server
 - `PROD_GIT_PASSWORD` - Contraseña/token para acceder al repositorio Git del config server
 
@@ -73,7 +73,8 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 
 - **AZURE_CREDENTIALS** es compartido para todos los ambientes y debe ser el JSON completo del Service Principal de Azure
 - **DOCKERHUB_USERNAME** y **DOCKERHUB_TOKEN** son compartidos para todos los ambientes
-- Cada ambiente tiene su propio Resource Group y AKS Cluster, pero comparten las mismas credenciales de Azure y Docker Hub
+- **SPRING_CLOUD_CONFIG_SERVER_GIT_URI** es compartido para todos los ambientes
+- Cada ambiente tiene su propio Resource Group y AKS Cluster, pero comparten las mismas credenciales de Azure, Docker Hub y la URI del config server
 - Las imágenes Docker se publican en Docker Hub con el formato: `DOCKERHUB_USERNAME/cloud-config:COMMIT_SHA`
 - Los secrets son sensibles y no deben compartirse ni exponerse en el código
 - Asegúrate de que el Service Principal tenga los permisos necesarios en cada Resource Group y AKS cluster

@@ -76,7 +76,7 @@ jobs:
         kubectl create configmap cloud-config-config \
           --from-literal=SPRING_PROFILES_ACTIVE=${{ env.ENVIRONMENT }} \
           --from-literal=SPRING_ZIPKIN_BASE_URL=${{ secrets.PROD_SPRING_ZIPKIN_BASE_URL }} \
-          --from-literal=SPRING_CLOUD_CONFIG_SERVER_GIT_URI=${{ secrets.PROD_SPRING_CLOUD_CONFIG_SERVER_GIT_URI }} \
+          --from-literal=SPRING_CLOUD_CONFIG_SERVER_GIT_URI=${{ secrets.SPRING_CLOUD_CONFIG_SERVER_GIT_URI }} \
           -n ${{ env.ENVIRONMENT }} \
           --dry-run=client -o yaml | kubectl apply -f -
 
