@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: cloud-config
-        image: ${ACR_NAME}.azurecr.io/${IMAGE_NAME}:${IMAGE_TAG}
+        image: ${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}
         imagePullPolicy: Always
         ports:
         - containerPort: 9296
@@ -74,6 +74,6 @@ spec:
           timeoutSeconds: 5
           failureThreshold: 3
       imagePullSecrets:
-      - name: acr-secret
+      - name: dockerhub-secret
 
 
