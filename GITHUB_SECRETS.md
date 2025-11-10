@@ -22,6 +22,7 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 
 ### Configuración de la Aplicación
 - `SPRING_CLOUD_CONFIG_SERVER_GIT_URI` - URI del repositorio Git del config server (compartido para todos los ambientes)
+  > **Nota:** El repositorio Git es público, por lo que no se requieren credenciales de autenticación
 
 ## Secrets para Ambiente DEV (develop branch)
 
@@ -31,8 +32,6 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 
 ### Configuración de la Aplicación
 - `DEV_SPRING_ZIPKIN_BASE_URL` - URL base de Zipkin para tracing
-- `DEV_GIT_USERNAME` - Usuario para acceder al repositorio Git del config server
-- `DEV_GIT_PASSWORD` - Contraseña/token para acceder al repositorio Git del config server
 
 ---
 
@@ -44,8 +43,6 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 
 ### Configuración de la Aplicación
 - `STAGE_SPRING_ZIPKIN_BASE_URL` - URL base de Zipkin para tracing
-- `STAGE_GIT_USERNAME` - Usuario para acceder al repositorio Git del config server
-- `STAGE_GIT_PASSWORD` - Contraseña/token para acceder al repositorio Git del config server
 
 ---
 
@@ -57,8 +54,6 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 
 ### Configuración de la Aplicación
 - `PROD_SPRING_ZIPKIN_BASE_URL` - URL base de Zipkin para tracing
-- `PROD_GIT_USERNAME` - Usuario para acceder al repositorio Git del config server
-- `PROD_GIT_PASSWORD` - Contraseña/token para acceder al repositorio Git del config server
 
 ---
 

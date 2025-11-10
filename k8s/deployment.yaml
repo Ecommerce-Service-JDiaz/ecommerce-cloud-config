@@ -40,16 +40,6 @@ spec:
             configMapKeyRef:
               name: cloud-config-config
               key: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
-        - name: SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME
-          valueFrom:
-            secretKeyRef:
-              name: cloud-config-secrets
-              key: SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME
-        - name: SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: cloud-config-secrets
-              key: SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD
         resources:
           requests:
             memory: "512Mi"
