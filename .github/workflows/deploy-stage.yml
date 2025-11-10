@@ -62,13 +62,7 @@ jobs:
       run: kubectl create namespace ${{ env.ENVIRONMENT }} --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Create Docker Hub pull secret
-      run: |
-        kubectl create secret docker-registry dockerhub-secret \
-          --docker-server=https://index.docker.io/v1/ \
-          --docker-username=${{ secrets.DOCKERHUB_USERNAME }} \
-          --docker-password=${{ secrets.DOCKERHUB_TOKEN }} \
-          -n ${{ env.ENVIRONMENT }} \
-          --dry-run=client -o yaml | kubectl apply -f -
+      run: kubectl create secret docker-registry dockerhub-secret --docker-server=https://index.docker.io/v1/ --docker-username=${{ secrets.DOCKERHUB_USERNAME }} --docker-password=${{ secrets.DOCKERHUB_TOKEN }} -n ${{ env.ENVIRONMENT }} --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Create ConfigMap
       run: |
