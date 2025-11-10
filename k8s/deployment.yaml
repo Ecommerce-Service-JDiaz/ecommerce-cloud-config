@@ -45,6 +45,16 @@ spec:
             configMapKeyRef:
               name: cloud-config-config
               key: SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL
+        - name: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+          valueFrom:
+            configMapKeyRef:
+              name: cloud-config-config
+              key: EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE
+        - name: EUREKA_INSTANCE_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: cloud-config-config
+              key: EUREKA_INSTANCE_HOSTNAME
         resources:
           requests:
             memory: "512Mi"
