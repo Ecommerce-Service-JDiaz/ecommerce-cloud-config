@@ -73,10 +73,15 @@ jobs:
 
     - name: Create ConfigMap
       run: |
+        GIT_BRANCH="${{ secrets.SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL }}"
+        if [ -z "$GIT_BRANCH" ]; then
+          GIT_BRANCH="main"
+        fi
         kubectl create configmap cloud-config-config \
           --from-literal=SPRING_PROFILES_ACTIVE=${{ env.ENVIRONMENT }} \
           --from-literal=SPRING_ZIPKIN_BASE_URL=${{ secrets.STAGE_SPRING_ZIPKIN_BASE_URL }} \
           --from-literal=SPRING_CLOUD_CONFIG_SERVER_GIT_URI=${{ secrets.SPRING_CLOUD_CONFIG_SERVER_GIT_URI }} \
+          --from-literal=SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL="$GIT_BRANCH" \
           -n ${{ env.ENVIRONMENT }} \
           --dry-run=client -o yaml | kubectl apply -f -
 

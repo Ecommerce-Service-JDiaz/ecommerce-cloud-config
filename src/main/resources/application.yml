@@ -11,7 +11,8 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/Ecommerce-Service-JDiaz/ecommerce-cloud-config-server
+          uri: ${SPRING_CLOUD_CONFIG_SERVER_GIT_URI:https://github.com/Ecommerce-Service-JDiaz/ecommerce-cloud-config-server}
+          default-label: ${SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL:main}
           clone-on-start: true
 
 resilience4j:
