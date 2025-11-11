@@ -51,6 +51,7 @@ jobs:
         SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name SPRING-CLOUD-CONFIG-SERVER-GIT-DEFAULT-LABEL --query value -o tsv 2>/dev/null || echo "main")
         EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name EUREKA-CLIENT-SERVICE-URL-DEFAULTZONE --query value -o tsv 2>/dev/null || echo "http://service-discovery:8761/eureka/")
         EUREKA_INSTANCE_HOSTNAME=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name EUREKA-INSTANCE-HOSTNAME --query value -o tsv 2>/dev/null || echo "cloud-config-service")
+  
         
         # Enmascarar valores sensibles en los logs
         echo "::add-mask::$DOCKERHUB_TOKEN"
