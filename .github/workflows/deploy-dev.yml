@@ -7,9 +7,8 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP_DEV }}
-  CLUSTER_NAME: ${{ secrets.AKS_CLUSTER_NAME_DEV }}
+  KEY_VAULT_NAME: ecommercekv8486
+  RESOURCE_GROUP_KV: ecommerce-rg-global
   IMAGE_NAME: cloud-config
   ENVIRONMENT: dev
 
@@ -31,19 +30,6 @@ jobs:
     - name: Build with Maven
       run: mvn clean package -DskipTests
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Build and push Docker image
-      run: |
-        docker build -t ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-        docker push ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        docker tag ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-        docker push ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-
     - name: Set up kubectl
       uses: azure/setup-kubectl@v3
 
@@ -51,6 +37,56 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Get secrets from Azure Key Vault
+      id: get-secrets
+      run: |
+        set +x
+        DOCKERHUB_USERNAME=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name DOCKERHUB-USERNAME --query value -o tsv)
+        DOCKERHUB_TOKEN=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name DOCKERHUB-TOKEN --query value -o tsv)
+        RESOURCE_GROUP=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name AZURE-RESOURCE-GROUP-DEV --query value -o tsv)
+        CLUSTER_NAME=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name AKS-CLUSTER-NAME-DEV --query value -o tsv)
+        SPRING_ZIPKIN_BASE_URL=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name DEV-SPRING-ZIPKIN-BASE-URL --query value -o tsv 2>/dev/null || echo "")
+        SPRING_CLOUD_CONFIG_SERVER_GIT_URI=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name SPRING-CLOUD-CONFIG-SERVER-GIT-URI --query value -o tsv 2>/dev/null || echo "")
+        SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name SPRING-CLOUD-CONFIG-SERVER-GIT-DEFAULT-LABEL --query value -o tsv 2>/dev/null || echo "main")
+        EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name EUREKA-CLIENT-SERVICE-URL-DEFAULTZONE --query value -o tsv 2>/dev/null || echo "http://service-discovery:8761/eureka/")
+        EUREKA_INSTANCE_HOSTNAME=$(az keyvault secret show --vault-name ${{ env.KEY_VAULT_NAME }} --name EUREKA-INSTANCE-HOSTNAME --query value -o tsv 2>/dev/null || echo "cloud-config-service")
+        
+        # Enmascarar valores sensibles en los logs
+        echo "::add-mask::$DOCKERHUB_TOKEN"
+        echo "::add-mask::$DOCKERHUB_USERNAME"
+        if [ -n "$SPRING_CLOUD_CONFIG_SERVER_GIT_URI" ]; then
+          echo "::add-mask::$SPRING_CLOUD_CONFIG_SERVER_GIT_URI"
+        fi
+        if [ -n "$SPRING_ZIPKIN_BASE_URL" ]; then
+          echo "::add-mask::$SPRING_ZIPKIN_BASE_URL"
+        fi
+        
+        # Establecer variables de entorno sin exponer valores
+        {
+          echo "DOCKERHUB_USERNAME=$DOCKERHUB_USERNAME"
+          echo "DOCKERHUB_TOKEN=$DOCKERHUB_TOKEN"
+          echo "RESOURCE_GROUP=$RESOURCE_GROUP"
+          echo "CLUSTER_NAME=$CLUSTER_NAME"
+          echo "SPRING_ZIPKIN_BASE_URL=$SPRING_ZIPKIN_BASE_URL"
+          echo "SPRING_CLOUD_CONFIG_SERVER_GIT_URI=$SPRING_CLOUD_CONFIG_SERVER_GIT_URI"
+          echo "SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL=$SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL"
+          echo "EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=$EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE"
+          echo "EUREKA_INSTANCE_HOSTNAME=$EUREKA_INSTANCE_HOSTNAME"
+        } >> $GITHUB_ENV
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ env.DOCKERHUB_USERNAME }}
+        password: ${{ env.DOCKERHUB_TOKEN }}
+
+    - name: Build and push Docker image
+      run: |
+        docker build -t ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+        docker push ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker tag ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+        docker push ${{ env.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
 
     - name: Configure kubectl
       run: |
@@ -67,25 +103,33 @@ jobs:
       run: |
         kubectl create secret docker-registry dockerhub-secret \
           --docker-server=https://index.docker.io/v1/ \
-          --docker-username="${{ secrets.DOCKERHUB_USERNAME }}" \
-          --docker-password="${{ secrets.DOCKERHUB_TOKEN }}" \
+          --docker-username="${{ env.DOCKERHUB_USERNAME }}" \
+          --docker-password="${{ env.DOCKERHUB_TOKEN }}" \
           -n "${{ env.ENVIRONMENT }}" \
           --dry-run=client -o yaml > /tmp/dockerhub-secret.yaml
         kubectl apply -f /tmp/dockerhub-secret.yaml
 
     - name: Create ConfigMap
       run: |
-        GIT_BRANCH="${{ secrets.SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL }}"
+        GIT_BRANCH="${{ env.SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL }}"
         if [ -z "$GIT_BRANCH" ]; then
           GIT_BRANCH="main"
         fi
+        EUREKA_URL="${{ env.EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE }}"
+        if [ -z "$EUREKA_URL" ]; then
+          EUREKA_URL="http://service-discovery:8761/eureka/"
+        fi
+        EUREKA_HOSTNAME="${{ env.EUREKA_INSTANCE_HOSTNAME }}"
+        if [ -z "$EUREKA_HOSTNAME" ]; then
+          EUREKA_HOSTNAME="cloud-config-service"
+        fi
         kubectl create configmap cloud-config-config \
           --from-literal=SPRING_PROFILES_ACTIVE=${{ env.ENVIRONMENT }} \
-          --from-literal=SPRING_ZIPKIN_BASE_URL=${{ secrets.DEV_SPRING_ZIPKIN_BASE_URL }} \
-          --from-literal=SPRING_CLOUD_CONFIG_SERVER_GIT_URI=${{ secrets.SPRING_CLOUD_CONFIG_SERVER_GIT_URI }} \
+          --from-literal=SPRING_ZIPKIN_BASE_URL="${{ env.SPRING_ZIPKIN_BASE_URL }}" \
+          --from-literal=SPRING_CLOUD_CONFIG_SERVER_GIT_URI="${{ env.SPRING_CLOUD_CONFIG_SERVER_GIT_URI }}" \
           --from-literal=SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL="$GIT_BRANCH" \
-          --from-literal=EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=${{ secrets.EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE || 'http://service-discovery:8761/eureka/' }} \
-          --from-literal=EUREKA_INSTANCE_HOSTNAME=${{ secrets.EUREKA_INSTANCE_HOSTNAME || 'cloud-config-service' }} \
+          --from-literal=EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE="$EUREKA_URL" \
+          --from-literal=EUREKA_INSTANCE_HOSTNAME="$EUREKA_HOSTNAME" \
           -n ${{ env.ENVIRONMENT }} \
           --dry-run=client -o yaml | kubectl apply -f -
 
@@ -99,7 +143,7 @@ jobs:
         export ENVIRONMENT="${{ env.ENVIRONMENT }}"
         export IMAGE_TAG="${{ github.sha }}"
         export IMAGE_NAME="${{ env.IMAGE_NAME }}"
-        export DOCKER_USERNAME="${{ env.DOCKER_USERNAME }}"
+        export DOCKER_USERNAME="${{ env.DOCKERHUB_USERNAME }}"
         envsubst < k8s/deployment.yaml | kubectl apply -f -
         envsubst < k8s/service.yaml | kubectl apply -f -
         kubectl rollout status deployment/cloud-config -n ${{ env.ENVIRONMENT }}
