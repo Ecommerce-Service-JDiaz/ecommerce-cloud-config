@@ -35,11 +35,13 @@ spec:
             configMapKeyRef:
               name: cloud-config-config
               key: SPRING_ZIPKIN_BASE_URL
+              optional: true
         - name: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
           valueFrom:
             configMapKeyRef:
               name: cloud-config-config
               key: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
+              optional: true
         - name: SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL
           valueFrom:
             configMapKeyRef:

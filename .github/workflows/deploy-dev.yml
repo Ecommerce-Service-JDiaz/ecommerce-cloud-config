@@ -132,6 +132,7 @@ jobs:
 
     - name: Create ConfigMap
       run: |
+        # Preparar variables con valores por defecto si están vacías
         GIT_BRANCH="${{ env.SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL }}"
         if [ -z "$GIT_BRANCH" ]; then
           GIT_BRANCH="main"
@@ -144,15 +145,32 @@ jobs:
         if [ -z "$EUREKA_HOSTNAME" ]; then
           EUREKA_HOSTNAME="cloud-config-service"
         fi
+        
+        # Crear ConfigMap con variables requeridas
         kubectl create configmap cloud-config-config \
           --from-literal=SPRING_PROFILES_ACTIVE=${{ env.ENVIRONMENT }} \
-          --from-literal=SPRING_ZIPKIN_BASE_URL="${{ env.SPRING_ZIPKIN_BASE_URL }}" \
-          --from-literal=SPRING_CLOUD_CONFIG_SERVER_GIT_URI="${{ env.SPRING_CLOUD_CONFIG_SERVER_GIT_URI }}" \
           --from-literal=SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL="$GIT_BRANCH" \
           --from-literal=EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE="$EUREKA_URL" \
           --from-literal=EUREKA_INSTANCE_HOSTNAME="$EUREKA_HOSTNAME" \
           -n ${{ env.ENVIRONMENT }} \
           --dry-run=client -o yaml | kubectl apply -f -
+        
+        # Agregar variables opcionales solo si tienen valores (usando patch)
+        if [ -n "${{ env.SPRING_ZIPKIN_BASE_URL }}" ]; then
+          kubectl patch configmap cloud-config-config -n ${{ env.ENVIRONMENT }} \
+            --type merge \
+            -p "{\"data\":{\"SPRING_ZIPKIN_BASE_URL\":\"${{ env.SPRING_ZIPKIN_BASE_URL }}\"}}"
+        fi
+        
+        if [ -n "${{ env.SPRING_CLOUD_CONFIG_SERVER_GIT_URI }}" ]; then
+          kubectl patch configmap cloud-config-config -n ${{ env.ENVIRONMENT }} \
+            --type merge \
+            -p "{\"data\":{\"SPRING_CLOUD_CONFIG_SERVER_GIT_URI\":\"${{ env.SPRING_CLOUD_CONFIG_SERVER_GIT_URI }}\"}}"
+        fi
+        
+        # Verificar el ConfigMap creado
+        echo "ConfigMap creado:"
+        kubectl get configmap cloud-config-config -n ${{ env.ENVIRONMENT }} -o yaml
 
     - name: Install gettext for envsubst
       run: sudo apt-get update && sudo apt-get install -y gettext-base
