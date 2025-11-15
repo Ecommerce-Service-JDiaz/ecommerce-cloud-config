@@ -41,11 +41,24 @@ jobs:
       id: get-secrets
       run: |
         set +x
-        # Buscar el Key Vault dinámicamente por resource group (es el único en el grupo)
-        KEY_VAULT_NAME=$(az keyvault list --resource-group ${{ env.RESOURCE_GROUP_KV }} --query "[0].name" -o tsv)
-        if [ -z "$KEY_VAULT_NAME" ]; then
+        # Verificar suscripción actual
+        echo "Suscripción actual:"
+        az account show --query "{name:name, id:id}" -o table
+        
+        # Buscar el Key Vault dinámicamente por resource group
+        echo "Buscando Key Vault en resource group: ${{ env.RESOURCE_GROUP_KV }}"
+        KEY_VAULT_NAME=$(az keyvault list --resource-group ${{ env.RESOURCE_GROUP_KV }} --query "[0].name" -o tsv 2>&1)
+        
+        if [ -z "$KEY_VAULT_NAME" ] || [[ "$KEY_VAULT_NAME" == *"ERROR"* ]] || [[ "$KEY_VAULT_NAME" == *"error"* ]]; then
           echo "Error: No se encontró Key Vault en el resource group ${{ env.RESOURCE_GROUP_KV }}"
-          exit 1
+          echo "Intentando buscar en todas las suscripciones..."
+          KEY_VAULT_NAME=$(az keyvault list --query "[?resourceGroup=='${{ env.RESOURCE_GROUP_KV }}'] | [0].name" -o tsv 2>&1)
+          if [ -z "$KEY_VAULT_NAME" ] || [[ "$KEY_VAULT_NAME" == *"ERROR"* ]] || [[ "$KEY_VAULT_NAME" == *"error"* ]]; then
+            echo "Error: No se encontró Key Vault en el resource group ${{ env.RESOURCE_GROUP_KV }}"
+            echo "Listando todos los Key Vaults disponibles:"
+            az keyvault list --query "[].{Name:name, ResourceGroup:resourceGroup}" -o table
+            exit 1
+          fi
         fi
         echo "Key Vault encontrado: $KEY_VAULT_NAME"
         
