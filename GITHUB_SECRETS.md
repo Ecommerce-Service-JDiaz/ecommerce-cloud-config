@@ -20,7 +20,7 @@ Este documento lista todos los secrets que deben configurarse en GitHub para el 
 
 ## Secrets en Azure Key Vault
 
-Todos los demás secrets están almacenados en **Azure Key Vault** (`ecommercekv8486`) en el resource group `ecommerce-rg-global`.
+Todos los demás secrets están almacenados en **Azure Key Vault** en el resource group `ecommerce-rg-global`. El Key Vault se encuentra dinámicamente (es el único en el grupo).
 
 ### Secrets Compartidos (para todos los ambientes)
 
@@ -66,13 +66,17 @@ Todos los demás secrets están almacenados en **Azure Key Vault** (`ecommercekv
 
 ### En Azure Key Vault
 
-Los secrets deben estar almacenados en el Key Vault `ecommercekv8486` en el resource group `ecommerce-rg-global`.
+Los secrets deben estar almacenados en el Key Vault del resource group `ecommerce-rg-global`. El Key Vault se encuentra dinámicamente (es el único en el grupo), por lo que funciona incluso si el nombre cambia después de un rollback.
 
-Para agregar un secret al Key Vault:
+Para encontrar el Key Vault y agregar un secret:
 
 ```bash
+# Encontrar el Key Vault dinámicamente
+KEY_VAULT_NAME=$(az keyvault list --resource-group ecommerce-rg-global --query "[0].name" -o tsv)
+
+# Agregar un secret
 az keyvault secret set \
-  --vault-name ecommercekv8486 \
+  --vault-name "$KEY_VAULT_NAME" \
   --name SECRET-NAME \
   --value "secret-value"
 ```
@@ -80,8 +84,12 @@ az keyvault secret set \
 Ejemplo:
 
 ```bash
+# Encontrar el Key Vault
+KEY_VAULT_NAME=$(az keyvault list --resource-group ecommerce-rg-global --query "[0].name" -o tsv)
+
+# Agregar el secret
 az keyvault secret set \
-  --vault-name ecommercekv8486 \
+  --vault-name "$KEY_VAULT_NAME" \
   --name DOCKERHUB-USERNAME \
   --value "tu-usuario-dockerhub"
 ```
@@ -91,7 +99,8 @@ az keyvault secret set \
 ## Notas Importantes
 
 - **AZURE_CREDENTIALS** es el único secret que debe estar en GitHub. Todos los demás están en Azure Key Vault.
-- El Service Principal usado en `AZURE_CREDENTIALS` debe tener permisos para leer secrets del Key Vault `ecommercekv8486`.
+- El Service Principal usado en `AZURE_CREDENTIALS` debe tener permisos para leer secrets del Key Vault en el resource group `ecommerce-rg-global`.
+- El Key Vault se encuentra dinámicamente por resource group, por lo que funciona incluso si el nombre cambia después de un rollback.
 - Los nombres de los secrets en Key Vault usan guiones (`-`) en lugar de guiones bajos (`_`).
 - Las imágenes Docker se publican en Docker Hub con el formato: `DOCKERHUB_USERNAME/cloud-config:COMMIT_SHA`
 - Los secrets son sensibles y no deben compartirse ni exponerse en el código
